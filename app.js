@@ -5,9 +5,24 @@ var fs = require('fs'),
     gm = require('gm'),
     path = require('path');
 
-app.get('/', function (req, res) {
-    resize('images/diary/conference-2015-team-02.jpg',109,200,function(data) {
-        res.send(data);
+var res_opts = {
+    root: __dirname + '/',
+    dotfiles: 'deny',
+    headers: {
+        'x-timestamp': Date.now(),
+        'x-sent': true
+    }
+};
+
+app.get('/:path/:w/:h/:img', function (req, res) {
+    resize('images/'+req.params.path+'/'+req.params.img,req.params.w,null,function(data,err) {
+        
+        console.log(err);
+        if(!err) {
+            res.sendFile(data, res_opts);
+        } else {
+            res.send('File not found', 404);
+        }
     });
 });
 
@@ -20,14 +35,15 @@ function resize(file,w,h,cb) {
     file = objectify_file(file,w,h);
     check_file(file.file,w,h,function(err) {
         if(err) {
-            gm(file.file)
-            .resize(w, h)
+            var ratio = (w === h) ? '!':null;
+            gm(file.file)   
+            .resize(w, h,ratio)
             .noProfile()
             .write(file.fullpath, function (err) {
               if (!err) {
-                    cb(file.fullpath);
+                    cb(file.fullpath,null);
                 } else {
-                    console.error(err);
+                    cb(null,err);
                 }
             });
 
