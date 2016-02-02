@@ -9,10 +9,12 @@ A really simple image server build in Node.
 ## Todo:
 
 * ~~Serve resized files as files~~
-* ~~Get file from filepath `/:path/:w/:h/:file`~~
+* ~~Get file from filepath `/r/:w/:h/:path/:file`~~
 * ~~return a 404 for missing files~~
-* Get file from filepath `/:path/:w/:file`
-* Get *origninal* file from filepath `/:path/:file`
+* ~~Get *origninal* file from filepath `/:path/:file`~~
+* ~~Add a general 404 for all unmatched paths~~
+* ~~Get JSON object of width and height from `/s/:path/:file`~~
+* Add a cleanse option to remove all created sub-folders.
 * Check the request uri to ensure that only `roobottom.com` can call this script.
 
 ## Think about:

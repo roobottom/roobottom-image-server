@@ -1,9 +1,11 @@
 var express = require('express');
 var app = express();
+app.use(express.static('images'));
 
-var fs = require('fs'),
-    gm = require('gm'),
-    path = require('path');
+var fs      = require('fs'),
+    gm      = require('gm'),
+    path    = require('path'),
+    sizeOf  = require('image-size');
 
 var res_opts = {
     root: __dirname + '/',
@@ -14,20 +16,35 @@ var res_opts = {
     }
 };
 
-app.get('/:path/:w/:h/:img', function (req, res) {
-    resize('images/'+req.params.path+'/'+req.params.img,req.params.w,null,function(data,err) {
-        
-        console.log(err);
+// resize
+app.get('/r/:w/:h/:path/:img', function (req, res) {
+    var w = (req.params.w === 'auto') ? null:req.params.w;
+    var h = (req.params.h === 'auto') ? null:req.params.h;
+    resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
         if(!err) {
             res.sendFile(data, res_opts);
         } else {
-            res.send('File not found', 404);
+            res.sendStatus(404);
         }
     });
 });
 
-app.listen(3000, function () {
-  console.log('Listening on port 3000!');
+// get size
+app.get('/s/:path/:img', function (req, res) {
+    console.dir(req);
+    get_size('images/' + req.params.path + '/' + req.params.img, function(size,err) {
+        if(!err) {
+            res.send({'w':size.width,'h':size.height});
+        }
+    });
+});
+
+app.use(function(req, res){
+    res.sendStatus(404);
+});
+
+app.listen(3003, function () {
+  console.log('Listening on port 3003!');
 });
 
 
@@ -37,7 +54,7 @@ function resize(file,w,h,cb) {
         if(err) {
             var ratio = (w === h) ? '!':null;
             gm(file.file)   
-            .resize(w, h,ratio)
+            .resize(w,h,ratio)
             .noProfile()
             .write(file.fullpath, function (err) {
               if (!err) {
@@ -46,9 +63,8 @@ function resize(file,w,h,cb) {
                     cb(null,err);
                 }
             });
-
         } else {
-            cb(file.fullpath);
+            cb(file.fullpath,null);
         }
     });
 }
@@ -105,4 +121,15 @@ function get_exif(file,cb) {
     });
 };
 
-
+function get_size(file,cb) {
+    console.time('size');
+    sizeOf(file, function (err, dimensions) {
+        if(!err) {
+            cb(dimensions,null);
+        } else {
+            cb(null,err);
+        }
+      console.log(dimensions.width, dimensions.height);
+      console.timeEnd('size');
+    });
+}
