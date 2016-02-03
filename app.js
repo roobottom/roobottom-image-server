@@ -16,28 +16,42 @@ var res_opts = {
     }
 };
 
+var whitelist = [
+    'http://roo.dev/',
+    'http://roobottom.com/'
+];
+
 // resize
 app.get('/r/:w/:h/:path/:img', function (req, res) {
-    var w = (req.params.w === 'auto') ? null:req.params.w;
-    var h = (req.params.h === 'auto') ? null:req.params.h;
-    resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
-        if(!err) {
-            res.sendFile(data, res_opts);
-        } else {
-            res.sendStatus(404);
-        }
-    });
+    if(whitelist.indexOf(req.headers.referer) === -1) {
+        res.sendStatus(403);
+    } else {
+        var w = (req.params.w === 'auto') ? null:req.params.w;
+        var h = (req.params.h === 'auto') ? null:req.params.h;
+        resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
+            if(!err) {
+                res.sendFile(data, res_opts);
+            } else {
+                res.sendStatus(404);
+            }
+        }); 
+    }
 });
 
 // get size
 app.get('/s/:path/:img', function (req, res) {
-    console.dir(req.headers);
-    get_size('images/' + req.params.path + '/' + req.params.img, function(size,err) {
-        if(!err) {
-            res.send({'w':size.width,'h':size.height});
-        }
-    });
+    if(whitelist.indexOf(req.headers.referer) === -1) {
+        res.sendStatus(403);
+    } else {
+        res.header("Access-Control-Allow-Origin", "*");
+        get_size('images/' + req.params.path + '/' + req.params.img, function(size,err) {
+            if(!err) {
+                res.send({'w':size.width,'h':size.height});
+            }
+        });
+    }
 });
+
 
 app.use(function(req, res){
     res.sendStatus(404);
