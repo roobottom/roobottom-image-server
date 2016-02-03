@@ -31,7 +31,7 @@ app.get('/r/:w/:h/:path/:img', function (req, res) {
 
 // get size
 app.get('/s/:path/:img', function (req, res) {
-    console.dir(req);
+    console.dir(req.headers);
     get_size('images/' + req.params.path + '/' + req.params.img, function(size,err) {
         if(!err) {
             res.send({'w':size.width,'h':size.height});
@@ -110,16 +110,6 @@ function check_file(file,w,h,cb) {
     });  
 };
 
-function get_exif(file,cb) {
-    gm(file)
-    .identify(function (err, data) {
-        if (!err) {
-            return cb(data);
-        } else {
-            return cb(err);
-        }
-    });
-};
 
 function get_size(file,cb) {
     console.time('size');
@@ -132,4 +122,4 @@ function get_size(file,cb) {
       console.log(dimensions.width, dimensions.height);
       console.timeEnd('size');
     });
-}
+};
