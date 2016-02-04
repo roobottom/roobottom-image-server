@@ -17,13 +17,16 @@ var res_opts = {
 };
 
 var whitelist = [
-    'http://roo.dev/',
-    'http://roobottom.com/'
+    '^.*\/\/roo\.dev\/?.*$',
+    '^.*\/\/roobottom\.com\/?.*$',
+    '^.*\/\/localhost\/?.*$'
 ];
+var whitelist_regex = new RegExp(whitelist.join("|"), "g");
 
 // resize
-app.get('/r/:w/:h/:path/:img', function (req, res) {
-    if(whitelist.indexOf(req.headers.referer) === -1) {
+app.get('/r/:w/:h/:path/:img', function (req, res) { 
+    var headers = req.headers.referer;
+    if(headers.match(whitelist_regex) === null) {
         res.sendStatus(403);
     } else {
         var w = (req.params.w === 'auto') ? null:req.params.w;
@@ -40,7 +43,8 @@ app.get('/r/:w/:h/:path/:img', function (req, res) {
 
 // get size
 app.get('/s/:path/:img', function (req, res) {
-    if(whitelist.indexOf(req.headers.referer) === -1) {
+    var headers = req.headers.referer;
+    if(headers.match(whitelist_regex) === null) {
         res.sendStatus(403);
     } else {
         res.header("Access-Control-Allow-Origin", "*");
