@@ -19,18 +19,21 @@ var res_opts = {
 var whitelist = [
     '^.*\/\/roo\.dev\/?.*$',
     '^.*\/\/roobottom\.com\/?.*$',
-    '^.*\/\/localhost\/?.*$'
+    '^.*\/\/localhost\/?.*$',
+
 ];
 var whitelist_regex = new RegExp(whitelist.join("|"), "g");
+console.log(whitelist_regex);
 
 // resize
 app.get('/r/:w/:h/:path/:img', function (req, res) { 
-    var headers = req.headers.referer;
-    if(headers.match(whitelist_regex) === null) {
+    var referer = req.headers.referer;
+    if(!referer) referer='//localhost';//if we call this script direct
+    if(referer.match(whitelist_regex) === null) {
         res.sendStatus(403);
     } else {
-        var w = (req.params.w === 'auto') ? null:req.params.w;
-        var h = (req.params.h === 'auto') ? null:req.params.h;
+        var w = req.params.w;
+        var h = req.params.h;
         resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
             if(!err) {
                 res.sendFile(data, res_opts);
@@ -65,28 +68,70 @@ app.listen(3003, function () {
   console.log('Listening on port 3003!');
 });
 
-
+//resize
 function resize(file,w,h,cb) {
     file = objectify_file(file,w,h);
     check_file(file.file,w,h,function(err) {
         if(err) {
-            var ratio = (w === h) ? '!':null;
-            gm(file.file)   
-            .resize(w,h,ratio)
-            .noProfile()
-            .write(file.fullpath, function (err) {
-              if (!err) {
-                    cb(file.fullpath,null);
-                } else {
-                    cb(null,err);
-                }
-            });
+            //if w or h are auto, set these to null
+            w = (w === 'auto') ? null:w;
+            h = (h === 'auto') ? null:h;
+
+            if(w === h) {
+
+                //save the h+w for cropping
+                var crop_w = w;
+                var crop_h = h;
+
+                //first of all, lets get the w+h of the orriginal file:
+                get_size(file.file,function(size) {
+
+                    
+                    if(size.width > size.height) {
+                        //resize by h first, then crop
+                        w=null;
+                    } else {
+                        //resize by w first, then crop
+                        h=null;
+                    }
+                    console.log('resize',w,h,'crop',crop_w,crop_h);
+
+                    gm(file.file)   
+                        .resize(w,h)
+                        .crop(crop_w,crop_h)
+                        .noProfile()
+                        .write(file.fullpath, function (err) {
+                      if (!err) {
+                            cb(file.fullpath,null);
+                        } else {
+                            cb(null,err);
+                        }
+                    });
+                });
+
+                 
+            } else {
+                gm(file.file)   
+                    .resize(w,h)
+                    .noProfile()
+                    .write(file.fullpath, function (err) {
+                  if (!err) {
+                        cb(file.fullpath,null);
+                    } else {
+                        cb(null,err);
+                    }
+                });
+            }
+
+            
+
         } else {
             cb(file.fullpath,null);
         }
     });
-}
+};
 
+//reusable file object
 function objectify_file(file,w,h) {
     return {
         "file":file,
@@ -95,6 +140,7 @@ function objectify_file(file,w,h) {
     }
 }
 
+//check if a folder exisists, if not, create it.
 function check_folder(folder, callback) {  
   fs.stat(folder, function(err, stats) {
     if (err && err.errno === -2) {
@@ -105,8 +151,9 @@ function check_folder(folder, callback) {
   });
 };
 
-function check_file(file,w,h,cb) {
-    
+
+//check if a file exists, if not, create it
+function check_file(file,w,h,cb) { 
     file = objectify_file(file,w,h);
 
     //first, lets check if this folder exists;
@@ -115,7 +162,7 @@ function check_file(file,w,h,cb) {
             //now check if the file exists
             fs.stat(file.fullpath,function(err,stats) {
                 if (!err) {
-                    cb(undefined);
+                    cb(null);
                 } else if(err && err.errno === -2) {
                     cb(err);
                 } else {
