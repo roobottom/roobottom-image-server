@@ -26,7 +26,7 @@ var whitelist_regex = new RegExp(whitelist.join("|"), "g");
 console.log(whitelist_regex);
 
 // resize
-app.get('/r/:w/:h/:path/:img', function (req, res) { 
+app.get('/r/:w/:h/:path/:img', function (req, res) {
     var referer = req.headers.referer;
     if(!referer) referer='//localhost';//if we call this script direct
     if(referer.match(whitelist_regex) === null) {
@@ -37,10 +37,10 @@ app.get('/r/:w/:h/:path/:img', function (req, res) {
         resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
             if(!err) {
                 res.sendFile(data, res_opts);
-            } else {
-                res.sendStatus(404);
+            } else {  
+                res.send('Error: '+err,500);
             }
-        }); 
+        });
     }
 });
 
@@ -86,7 +86,7 @@ function resize(file,w,h,cb) {
                 //first of all, lets get the w+h of the orriginal file:
                 get_size(file.file,function(size) {
 
-                    
+
                     if(size.width > size.height) {
                         //resize by h first, then crop
                         w=null;
@@ -96,7 +96,7 @@ function resize(file,w,h,cb) {
                     }
                     console.log('resize',w,h,'crop',crop_w,crop_h);
 
-                    gm(file.file)   
+                    gm(file.file)
                         .resize(w,h)
                         .crop(crop_w,crop_h)
                         .noProfile()
@@ -109,9 +109,9 @@ function resize(file,w,h,cb) {
                     });
                 });
 
-                 
+
             } else {
-                gm(file.file)   
+                gm(file.file)
                     .resize(w,h)
                     .noProfile()
                     .write(file.fullpath, function (err) {
@@ -123,7 +123,7 @@ function resize(file,w,h,cb) {
                 });
             }
 
-            
+
 
         } else {
             cb(file.fullpath,null);
@@ -141,7 +141,7 @@ function objectify_file(file,w,h) {
 }
 
 //check if a folder exisists, if not, create it.
-function check_folder(folder, callback) {  
+function check_folder(folder, callback) {
   fs.stat(folder, function(err, stats) {
     if (err && err.errno === -2) {
       fs.mkdir(folder, callback);
@@ -153,7 +153,7 @@ function check_folder(folder, callback) {
 
 
 //check if a file exists, if not, create it
-function check_file(file,w,h,cb) { 
+function check_file(file,w,h,cb) {
     file = objectify_file(file,w,h);
 
     //first, lets check if this folder exists;
@@ -172,7 +172,7 @@ function check_file(file,w,h,cb) {
         } else {
             console.log('check_folder',err);
         }
-    });  
+    });
 };
 
 
