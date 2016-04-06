@@ -37,8 +37,8 @@ app.get('/r/:w/:h/:path/:img', function (req, res) {
         resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
             if(!err) {
                 res.sendFile(data, res_opts);
-            } else {  
-                res.send('Error: '+err,500);
+            } else {
+                res.status(500).send('Error: '+err);
             }
         });
     }
