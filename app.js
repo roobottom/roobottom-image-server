@@ -68,7 +68,8 @@ app.listen(3003, function () {
   console.log('Listening on port 3003!');
 });
 
-//resize
+//resize the file.
+//you can also pass w=auto and/or h=auto
 function resize(file,w,h,cb) {
     file = objectify_file(file,w,h);
     check_file(file.file,w,h,function(err) {
@@ -131,7 +132,7 @@ function resize(file,w,h,cb) {
     });
 };
 
-//reusable file object
+//reusable file factory
 function objectify_file(file,w,h) {
     return {
         "file":file,
