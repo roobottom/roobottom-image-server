@@ -2,7 +2,7 @@ var express = require('express');
 var app = express();
 app.use(express.static('images'));
 
-var fs      = require('fs'),
+var fs      = require('fs-extra'),
     gm      = require('gm'),
     path    = require('path'),
     sizeOf  = require('image-size');
@@ -29,17 +29,27 @@ console.log(whitelist_regex);
 app.get('/r/:w/:h/:path/:img', function (req, res) {
     var referer = req.headers.referer;
     if(!referer) referer='//localhost';//if we call this script direct
+
+    //check that the caller is on the whitelist.
     if(referer.match(whitelist_regex) === null) {
         res.sendStatus(403);
     } else {
-        var w = req.params.w;
-        var h = req.params.h;
-        resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
-            if(!err) {
-                res.sendFile(data, res_opts);
-            } else {
-                res.status(500).send('Error: '+err);
-            }
+        //check for the existance of cache folder
+        //and create it if needed:
+        check_folder('./.cache/'+req.params.path, function(err) {
+          if(!err) {
+            var w = req.params.w;
+            var h = req.params.h;
+            resize('images/'+req.params.path+'/'+req.params.img,w,h,function(data,err) {
+                if(!err) {
+                    res.sendFile(data, res_opts);
+                } else {
+                    res.status(500).send('Error: '+err);
+                }
+            });
+          } else {
+            console.log(err);
+          }
         });
     }
 });
@@ -134,6 +144,7 @@ function resize(file,w,h,cb) {
 
 //reusable file factory
 function objectify_file(file,w,h) {
+  console.log(path.dirname(file));
     return {
         "file":file,
         "fullpath":path.dirname(file) + '/' + w + 'x' + h + '/' + path.basename(file),
@@ -143,12 +154,9 @@ function objectify_file(file,w,h) {
 
 //check if a folder exisists, if not, create it.
 function check_folder(folder, callback) {
-  fs.stat(folder, function(err, stats) {
-    if (err && err.errno === -2) {
-      fs.mkdir(folder, callback);
-    } else {
-      callback(err)
-    }
+  fs.ensureDir(folder, function(err) {
+    if(!err) {callback(null);}
+    else {callback(err);}
   });
 };
 
