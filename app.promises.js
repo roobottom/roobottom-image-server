@@ -9,10 +9,9 @@ app.use(express.static(tRoot));
 
 const fs      = require('fs-extra');
 const gm      = require('gm');
-const path    = require('path');
 const sizeOf  = require('image-size');
 const Promise = require('bluebird');
-const exif = require('exif');
+const exif    = require('exif');
 
 /*
 User requests: [img server]/r/[h]/[w]/[type]/[img]
@@ -69,6 +68,55 @@ function getSize(file) {
   });
 };
 
+/*
+check dir, if it doesn't exists, create it.
+This is a promise layer on fs-extra's ensureDir https://github.com/jprichardson/node-fs-extra#ensuredirdir-callback
+*/
+function ensureDir(dir) {
+  return new Promise((resolve,reject) => {
+      
+  });
+};
+
+/*
+calculate _how_ we should resize a file,
+this involves looking at the orriginal image to calulate how
+best we can crop this image.
+`w` and `h` can be either an int or 'auto'
+*/
+function calculateResize(file,w,h) {
+  return new Promise((resolve,reject) => {
+    w = (w === 'auto') ? null:w;
+    h = (h === 'auto') ? null:h;
+
+    if(w===h) {
+      getSize(file)
+      .then(size => {
+        //resize by h first, then crop
+        if(size.width > size.height) { w=null; }
+        //resize by w first, then crop
+        else { h=null; }
+        resolve({w:w,h:h});
+      }).catch(err => reject(err));
+    }
+    //this isn't a square resize, so just return the size object:
+    else {
+      resolve({w:w,h:h});
+    }
+  });
+};
+
+/*
+resize the image
+*/
+function resize(file,w,h) {
+  calculateResize(file,w,h)
+  .then(size => {
+
+  })
+  .catch(err => console.log(err));
+};
+
 let testImgs = [
   'diary/01.jpg',
   'diary/2015-09-05_005.jpg',
@@ -77,7 +125,7 @@ let testImgs = [
 ]
 
 Promise.map(testImgs, function(i) {
-  return getSize(oRoot + i);
+  return calculateResize(oRoot + i,698,698);
 })
 .then(r => console.log('result:',r))
 .catch(e => console.log('error:',e));
