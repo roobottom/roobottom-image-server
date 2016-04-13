@@ -1,14 +1,15 @@
 'use strict';
 
 const oRoot = './images/';
-const tRoot = './.cache/';
+const cacheRoot = './.cache/';
 
 const express = require('express');
 const app = express();
-app.use(express.static(tRoot));
+app.use(express.static(cacheRoot));
 
 const fs      = require('fs-extra');
 const gm      = require('gm');
+const path    = require('path');
 const sizeOf  = require('image-size');
 const Promise = require('bluebird');
 const exif    = require('exif');
@@ -38,7 +39,7 @@ check if a file exists.
 function checkFile(file) {
   return new Promise((resolve, reject) => {
       fs.stat(file, (err,stats) => {
-        if(!err) { resolve(stats); }
+        if(!err) { resolve(file); }
         else { reject(err); }
       });
   });
@@ -74,7 +75,10 @@ This is a promise layer on fs-extra's ensureDir https://github.com/jprichardson/
 */
 function ensureDir(dir) {
   return new Promise((resolve,reject) => {
-      
+      fs.ensureDir(dir,err => {
+        if(!err) { resolve(dir); }
+        else { reject(err); }
+      });
   });
 };
 
@@ -90,18 +94,19 @@ function calculateResize(file,w,h) {
     h = (h === 'auto') ? null:h;
 
     if(w===h) {
+      let cropW=w,cropH=h;
       getSize(file)
       .then(size => {
         //resize by h first, then crop
         if(size.width > size.height) { w=null; }
         //resize by w first, then crop
         else { h=null; }
-        resolve({w:w,h:h});
+        resolve({w:w,h:h,cropW:cropW,cropH:cropH});
       }).catch(err => reject(err));
     }
     //this isn't a square resize, so just return the size object:
     else {
-      resolve({w:w,h:h});
+      resolve({w:w,h:h,cropW:0,cropH:0});
     }
   });
 };
@@ -109,12 +114,18 @@ function calculateResize(file,w,h) {
 /*
 resize the image
 */
-function resize(file,w,h) {
-  calculateResize(file,w,h)
-  .then(size => {
+function resize(file,w,h,cropW,cropH) {
+  return new Promise((resolve,reject) => {
+    gm(oRoot+file)
+    .resize(w,h)
+    .crop(cropW,cropH)
+    .noProfile()
+    .write(cacheRoot+file, (err) => {
+      if(!err) { resolve(file); }
+      else { reject(err); }
+    });
+  });
 
-  })
-  .catch(err => console.log(err));
 };
 
 let testImgs = [
@@ -124,8 +135,14 @@ let testImgs = [
   'notes/IMG_8760.jpg'
 ]
 
-Promise.map(testImgs, function(i) {
-  return calculateResize(oRoot + i,698,698);
-})
-.then(r => console.log('result:',r))
+let file={name:'diary/01.jpg'};
+let targetW = 78;
+let targetH = 78;
+
+checkFile(oRoot+file.name)
+.then(
+  calculateResize(oRoot+file.name,targetW,targetH)
+  .then(r=>console.log(r))
+)
+.then(r=>console.log(r))
 .catch(e => console.log('error:',e));
