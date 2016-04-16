@@ -114,7 +114,7 @@ function go(type,file,w,h,cb) {
       });
 
     } else {
-      cb({err: fileStatus.err, code: 404});
+      cb({err: fileStatus.err+' /// '+targetDir+sourceFile, code: 404});
     }
   }
 }
