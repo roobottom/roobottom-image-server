@@ -104,7 +104,6 @@ function go(type,file,w,h,cb) {
     if(!fileStatus.err) {
       fs.ensureDirSync(targetDir);
       resize(sourceFile,targetDir+file,calculateResize(sourceFile,w,h),function(err) {
-        console.log('inside cb');
         if(!err) {
           cb({file: targetDir+file, err: null, code: 200});
         }
