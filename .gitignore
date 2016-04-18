@@ -2,3 +2,5 @@
 node_modules
 images/
 cache/
+flickr.settings.json
+data/
